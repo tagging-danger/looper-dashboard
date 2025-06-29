@@ -24,7 +24,9 @@ app.use(cors({
     ? [
         'https://tagging-danger.github.io',
         'https://looper-dashboard-backend.onrender.com',
-        'https://looper-dashboard.onrender.com'
+        'https://looper-dashboard.onrender.com',
+        'https://looper-dashboard-production.up.railway.app',
+        'https://looper-dashboard.up.railway.app'
       ] 
     : ['http://localhost:3000'],
   credentials: true
@@ -44,9 +46,18 @@ app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Health check endpoint
+// Health check endpoints
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
+    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+  });
 });
 
 // API routes
