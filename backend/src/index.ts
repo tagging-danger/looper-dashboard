@@ -21,7 +21,11 @@ const PORT = process.env.PORT || 5000;
 app.use(helmet());
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://yourdomain.com'] 
+    ? [
+        'https://tagging-danger.github.io',
+        'https://looper-dashboard-backend.onrender.com',
+        'https://looper-dashboard.onrender.com'
+      ] 
     : ['http://localhost:3000'],
   credentials: true
 }));
