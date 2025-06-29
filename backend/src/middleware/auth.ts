@@ -10,7 +10,7 @@ interface AuthRequest extends Request {
 export const generateToken = (userId: string): string => {
   const payload = { userId };
   const secret: Secret = JWT_SECRET;
-  const options: SignOptions = { expiresIn: JWT_EXPIRES_IN };
+  const options: SignOptions = { expiresIn: JWT_EXPIRES_IN as any };
   return jwt.sign(payload, secret, options);
 };
 
