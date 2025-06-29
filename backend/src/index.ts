@@ -3,39 +3,33 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
-import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 
+import { config, validateConfig } from './config';
 import authRoutes from './routes/auth';
 import transactionRoutes from './routes/transactions';
 import analyticsRoutes from './routes/analytics';
 import exportRoutes from './routes/export';
 import seedDatabase from './utils/seedData';
 
-dotenv.config();
+// Validate configuration
+validateConfig();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? [
-        'https://tagging-danger.github.io',
-        'https://looper-dashboard-backend.onrender.com',
-        'https://looper-dashboard.onrender.com',
-        'https://looper-dashboard-production.up.railway.app',
-        'https://looper-dashboard.up.railway.app'
-      ] 
-    : ['http://localhost:3000'],
+  origin: config.NODE_ENV === 'production' 
+    ? config.PRODUCTION_DOMAINS
+    : [config.CORS_ORIGIN],
   credentials: true
 }));
 
-// Rate limiting
+// Rate limiting with environment variables
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  windowMs: config.RATE_LIMIT_WINDOW_MS,
+  max: config.RATE_LIMIT_MAX_REQUESTS
 });
 app.use('/api/', limiter);
 
@@ -48,15 +42,21 @@ app.use(express.urlencoded({ extended: true }));
 
 // Health check endpoints
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+  res.status(200).json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    environment: config.NODE_ENV,
+    port: config.PORT
+  });
 });
 
 app.get('/api/health', (req, res) => {
   res.status(200).json({ 
     status: 'OK', 
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV,
-    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+    environment: config.NODE_ENV,
+    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    port: config.PORT
   });
 });
 
@@ -71,7 +71,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   console.error(err.stack);
   res.status(500).json({ 
     error: 'Something went wrong!',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
+    message: config.NODE_ENV === 'development' ? err.message : 'Internal server error'
   });
 });
 
@@ -83,14 +83,14 @@ app.use('*', (req, res) => {
 // Database connection
 const connectDB = async () => {
   try {
-    const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/financial_analytics';
-    await mongoose.connect(mongoURI);
-    console.log('MongoDB connected successfully');
+    console.log(`🔗 Connecting to MongoDB: ${config.MONGODB_URI.replace(/\/\/.*@/, '//***:***@')}`); // Hide credentials in logs
+    await mongoose.connect(config.MONGODB_URI);
+    console.log('✅ MongoDB connected successfully');
     
     // Seed database with sample data
     await seedDatabase();
   } catch (error) {
-    console.error('MongoDB connection error:', error);
+    console.error('❌ MongoDB connection error:', error);
     process.exit(1);
   }
 };
@@ -98,9 +98,11 @@ const connectDB = async () => {
 // Start server
 const startServer = async () => {
   await connectDB();
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Environment: ${process.env.NODE_ENV}`);
+  app.listen(config.PORT, () => {
+    console.log(`🚀 Server running on port ${config.PORT}`);
+    console.log(`🌍 Environment: ${config.NODE_ENV}`);
+    console.log(`📊 Health check: http://localhost:${config.PORT}/api/health`);
+    console.log(`🔐 JWT Secret: ${config.JWT_SECRET.substring(0, 10)}...`);
   });
 };
 
