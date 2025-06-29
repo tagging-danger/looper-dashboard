@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import jwt, { Secret, SignOptions } from 'jsonwebtoken';
 import User, { IUser } from '../models/User';
 import { JWT_SECRET, JWT_EXPIRES_IN } from '../config';
 
@@ -8,7 +8,10 @@ interface AuthRequest extends Request {
 }
 
 export const generateToken = (userId: string): string => {
-  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  const payload = { userId };
+  const secret: Secret = JWT_SECRET;
+  const options: SignOptions = { expiresIn: JWT_EXPIRES_IN };
+  return jwt.sign(payload, secret, options);
 };
 
 export const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
