@@ -60,7 +60,7 @@ A full-stack financial analytics application with interactive visualizations, ad
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/tagging-danger/looper-dashboard.git
    cd financial-analytics-dashboard
    ```
 
